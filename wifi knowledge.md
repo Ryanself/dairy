@@ -47,27 +47,30 @@ STA <- AP
 控制帧：RTS CTS ACK PS-POLL
 管理帧：Beacon
 数据帧：DATA NULL DHCP
-> 管理帧包括： `Association request
-Association response
-Reassociation request
-Reassociation response
-Probe request
-Probe response
-Beacon
-Announcement traffic indication message (ATIM)
-Disassociation
-Authentication
-Deauthentication
-Action`
+> 管理帧包括： `Association request`
+`Association response`
+`Reassociation request`
+`Reassociation response`
+`Probe request`
+`Probe response`
+`Beacon`
+`Announcement traffic indication message (ATIM)`
+`Disassociation`
+`Authentication`
+`Deauthentication`
+`Action`
 
 #### 帧结构
 
 分为3个部分（帧头Mac header，帧实体body，FCS域）
+
 1.Mac header分为4个字段（Frame Control，Duration ID， Address<包括目标源，BSSID>，Seq ctl）
+
 > Frame control field（MAC版本 2，类型『0，管理；1，控制；2，数据』 2，子类型 4，To DS 1，From DS 1，More Fragements 1，Retry 1，
 Power Management『0，active；1，power save』1，More Data 1，Protected Frame 1，Order 1） 
 Duration: 持续时间，表明该帧和它的确认帧将会占用信道多长时间。
 seq ctl: 顺序控制字段。
+
 2.body: Frame body。
 
 3.FCS: 帧校验序列，用来检查所收到帧的完整性。
