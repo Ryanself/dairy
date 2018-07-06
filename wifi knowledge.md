@@ -23,10 +23,10 @@ RedmiNote4X-hongmish	192.168.4.215	 f4:f5:db:06:19:4b
 ### WiFi连接过程
 STA开启WiFi-> STA Scan(probe request)
 
-> 1、supplicant向驱动发起connect请求； 
-2、wifi驱动进行Authentication，Association Request，Association Response处理，驱动完成后返回一个connect完成事件给supplicant； 
-3、supplicant收到connect完成事件后，后面是4 way handshake流程，supplicant监听l2_packet层的EAPOL包，处理EAPOL，并组包回应EAPOL，EAPOL包的解包及组包都是supplicant层实现。 
-4、EAPOL属于数据帧，最后都是通过内核网络接口发送或接收。
+> 1、STA（本例为小米手机）启用wifi后发送广播Probe Request帧进行主动扫描无线网络。SSID=Broadcast。
+2、AP收到probe req后回应probe res通告可提供的无线网络信息。
+3、STA发送authentication帧进行认证。STA发送association request帧进行请求关联。AP发出association response帧。
+4、AP与STA进行密钥协商（4 way handshake）。EAPOL属于数据帧，通过内核网络接口发送或接收。
 
 #### 4 way handshake:
 
@@ -64,6 +64,7 @@ AP与STA进行密钥协商（4次握手）。
 
 分为3个部分（帧头Mac header，帧实体body，FCS域）
 1.Mac header分为4个字段（Frame Control，Duration ID， Address<包括目标源，BSSID>，Seq ctl）
+
 > Frame control field（MAC版本 2，类型『0，管理；1，控制；2，数据』 2，子类型 4，To DS 1，From DS 1，More Fragements 1，Retry 1，
 Power Management『0，active；1，power save』1，More Data 1，Protected Frame 1，Order 1） 
 Duration: 持续时间，表明该帧和它的确认帧将会占用信道多长时间。
@@ -77,4 +78,4 @@ IEEE 802.11: IEEE定义的无线网络通信标准。
 SSID: Service Set Identifier服务集标识。
 AP: Access Point无线接入点,提供无线接入服务。
 STA: Station每一个连接到无线网络中的终端(可以联网的用户设备)都可称为一个站点。
----------------------------------------------------------------------------------------
+
