@@ -63,6 +63,7 @@ AP与STA进行密钥协商（4次握手）。
 #### 帧结构
 
 分为3个部分（帧头Mac header，帧实体body，FCS域）
+
 1.Mac header分为4个字段（Frame Control，Duration ID， Address<包括目标源，BSSID>，Seq ctl）
 
 > Frame control field（MAC版本 2，类型『0，管理；1，控制；2，数据』 2，子类型 4，To DS 1，From DS 1，More Fragements 1，Retry 1，
