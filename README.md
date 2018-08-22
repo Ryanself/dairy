@@ -1,2 +1,2 @@
 # dairy
-basic knowledge of wifi
+learn sth. about linux, driver, and some other thing.
