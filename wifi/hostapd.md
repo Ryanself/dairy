@@ -20,12 +20,33 @@ ssid有两类，interface和bss。其数量分别为interfaces.count 与 num_bss
 
 	void handle_probe_req(){
 	...
-	if (!sta && hapd->num_sta >= hapd->conf->max_num_sta)
-		wpa_printf(MSG_MSGDUMP, "Probe Request from " MACSTR " ignored,"
-		" too many connected stations.", MAC2STR(mgmt->sa));		
-		
+		if (!sta && hapd->num_sta >= hapd->conf->max_num_sta)
+			wpa_printf(MSG_MSGDUMP, "Probe Request from " MACSTR " ignored,"
+			" too many connected stations.", MAC2STR(mgmt->sa));		
+	
 	...
 	}
+	
+在sta_info.c中
+	
+	struct sta_info * ap_sta_add(struct hostapd_data *hapd, const u8 *addr){
+	...
+		if (hapd->num_sta >= hapd->conf->max_num_sta) {
+			wpa_printf(MSG_DEBUG, "no more room for new STAs (%d/%d)",
+				hapd->num_sta, hapd->conf->max_num_sta);
+			return NULL;
+			}
+			//following is the zallocing memory of sta.
+	...
+		hapd->num_sta++;
+	}
+	
+	void ap_free_sta(struct hostapd_data *hapd, struct sta_info *sta){
+	...
+		hapd->num_sta--;
+	...
+	}
+
 我们可以增加判断 &&all_sta_num>=hapd->conf->max_all_num_sta
 
-需要在hostapd-phy.conf中定义max_all_num_sta
+需要在hostapd-phy.conf中定义max_all_num_sta,并定义system params: all_sta_num (default 0).
