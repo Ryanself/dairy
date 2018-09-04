@@ -23,9 +23,14 @@ ubus 通信消息格式为json
 ubus对client端消息处理抽象出对象和方法的概念。
 [link：ubus](https://blog.csdn.net/jasonchen_gbd/article/details/45627967) 
 
-client 1 regitst and loop
-client 2 call ubus
-ubus call client 1
-client1 do return
-ubus return to client 2
-client1 rm
+* client 1 regitst and loop
+
+* client 2 call ubus
+
+* ubus call client 1
+
+* client1 do return
+
+* ubus return to client 2
+
+* client1 rm
