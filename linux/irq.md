@@ -1,0 +1,32 @@
+### Linux Irq(Linux 中断)
+
+#### 什么是中断
+根据中断入口跳转的方法不同，中断可分为向量中断和非向量中断。
+
+* 向量中断：中断号->对应地址执行
+* 非向量中断： 中断号->入口地址->software(flags)->具体中断
+
+设备的中断会打断内核进程中的正常调度和运行，系统对更高吞吐率的追求势必要求中断服务程序尽量短小，
+因此linux采用将中断处理程序分成了两个半部：top half， bottom half。
+中断上半部仅处理部分紧急的功能，往往被设计成不可中断，而底半部则做了几乎中断处理程序所有的事情，
+并可以被新的中断打断。
+
+#### 中断的申请和释放
+
+	int request_irq (unsigned int irq, irq_handler, unsigned long flags,
+					const char *name, void *dev);
+	//@ irq 要申请的硬件中断号
+	//@handler 注册的处理函数（顶半部）
+	//irqflags 中断处理属性，可以指定中断的触发方式以及处理方式。
+	// 返回值 0 success， -EINVAL 中断号无效或处理函数为null
+	//-EBUSY 中断被占用且不能共享				
+	void free_irq(unsigned int irq, void *dev_id);
+	
+#### 底半部实现
+
+**tasklet
+工作队列
+软中断和线程化 irq**
+
+**星期四, 06. 九月 2018 02:44下午 **
+以后再更新
