@@ -82,7 +82,100 @@ hostapd 经过一系列的初始化，
    ---------------------------
    星期五, 07. 九月 2018 05:32下午 
    ---------------------------
-   
+ 	path:   src/utils/eloop.c
+ 	
+   	函数处理向下递进：
+   	eloop_register_read_sock()
+   		return  eloop_register_sock();
+   			return eloop_sock_table_add_sock();
+   			
+   	eloop run();
+   		eloop_sock_table_dispatch();
+-----------------------------
+	   584 static void eloop_sock_table_dispatch(struct eloop_sock_table *table,
+	   585 ¦       ¦       ¦       ¦             fd_set *fds)
+	   586 {
+	   587 ¦       int i;
+	   588 
+	   589 ¦       if (table == NULL || table->table == NULL)
+ 	   590 ¦       ¦       return;
+ 	   591 
+	   592 ¦       table->changed = 0;
+	   593 ¦       for (i = 0; i < table->count; i++) {
+	   594 ¦       ¦       if (FD_ISSET(table->table[i].sock, fds)) {
+	   595 ¦       ¦       ¦       table->table[i].handler(table->table[i].sock,
+	   596 ¦       ¦       ¦       ¦       ¦       ¦       table->table[i].eloop_data,
+	   597 ¦       ¦       ¦       ¦       ¦       ¦       table->table[i].user_data);
+	   598 ¦       ¦       ¦       if (table->changed)
+	   599 ¦       ¦       ¦       ¦       break;
+	   600 ¦       ¦       }
+	   601 ¦       }
+	   602 }
+---------------------------------------------
+
+			hostapd_reload_iface
+			hostapd_reload_bss
+			interfaces.reload_config = hostapd_reload_config;
+			
+			
+			handle_reload_iface()
+			return hostapd_reload_config(iface)
+			
+			
+			handle_reload()
+				hostapd_for_each_interface(interfaces, handle_reload_iface, NULL)
+			
+-----------------------------
+
+	int hostapd_ctrl_iface_init(struct hostapd_data *hapd)
+	{
+	
+	  3421 ¦       if (eloop_register_read_sock(hapd->ctrl_sock, 
+	  3422 ¦       ¦       ¦       ¦            hostapd_ctrl_iface_receive, hapd, NULL) <
+	  3423 ¦           0) {
+	  3424 ¦       ¦       hostapd_ctrl_iface_deinit(hapd); 
+	  3425 ¦       ¦       return -1; 
+	  3426 ¦       } 
+	}//在初始化时将hostapd_ctrl_iface_receive加入eloop_sock_table
+----------------------------------------------
+	path: hostapd/ctrl_iface.c
+	
+	hostapd_ctrl_iface_receive()
+	
+	->reply_len = hostapd_ctrl_iface_receive_process(hapd, pos,
+			reply, reply_size, &from, fromlen);
+			
+			->} else if (os_strncmp(buf, "RELOAD", 6) == 0) {
+				if (hostapd_ctrl_iface_reload(hapd->iface))
+				reply_len = -1;
+				}
+				
+				->hostapd_reload_iface(iface)
+				{
+					...
+					for (j = 0; j < hapd_iface->num_bss; j++)
+						hostapd_reload_bss(hapd_iface->bss[j]);
+					return 0;
+				}
+				
+	/*  在hostapd_ctrl_iface_receive()中，在建立好套接字传送buffer后，调用
+	* hostapd_ctrl_iface_receive_process()对传送的bufer进行分析，当传入的
+	* buffer是RELOAD时，调用hostapd_ctrl_iface_reload(hapd->iface)进行
+	* reload。
+	*/
+-----------------------------
+	path: hostapd/main.c
+	
+	eloop_register_signal(SIGHUP, handle_reload, interfaces);
+	
+		->static void handle_reload(int sig, void *signal_ctx)
+		
+			-> hostapd_for_each_interface(interfaces, handle_reload_iface, NULL);
+				
+				->hostapd_reload_config(iface)
+					->hostapd_reload_bss()
+	
+
 
    	 
    	 
