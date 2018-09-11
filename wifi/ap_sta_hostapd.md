@@ -138,6 +138,30 @@ hostapd 经过一系列的初始化，
 	  3426 ¦       } 
 	}//在初始化时将hostapd_ctrl_iface_receive加入eloop_sock_table
 ----------------------------------------------
+	path: hostapd/main.c
+	
+		int main()
+	...
+	906 	 if (hostapd_setup_interface(interfaces.iface[i]))
+				goto out;
+				
+				->setup_interface()
+				
+					->if (start_ctrl_iface(iface))
+						return -1;
+						
+						->if (!iface->interfaces || !iface->interfaces->ctrl_iface_init)
+							return 0;
+							
+							->interfaces.ctrl_iface_init = hostapd_ctrl_iface_init;
+							
+							->if (eloop_register_read_sock(hapd->ctrl_sock,
+											hostapd_ctrl_iface_receive, hapd, NULL) <
+								0) {
+									hostapd_ctrl_iface_deinit(hapd);
+									return -1;
+								}
+	
 	path: hostapd/ctrl_iface.c
 	
 	hostapd_ctrl_iface_receive()

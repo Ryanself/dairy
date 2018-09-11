@@ -1,11 +1,15 @@
 ### hostapd_cli.c
 
+
+
 	static void wpa_request(struct wpa_ctrl *ctrl, int argc, char *argv[])
 	{
 	struct hostapd_cli_cmd *match = NULL;
 	......
 	match->handler(ctrl, argc - 1, &argv[1]);
 	}
+	
+![hostapd](https://img-blog.csdn.net/20170207120032404?watermark/2/text/aHR0cDovL2Jsb2cuY3Nkbi5uZXQvdmlld3NreTEx/font/5a6L5L2T/fontsize/400/fill/I0JBQkFCMA==/dissolve/70/gravity/SouthEast) 
 ----------------------------------------------
 	PATH: hostapd/hostapd_cli.c 
 
@@ -128,4 +132,11 @@
 
 	hostapd_cli_reconnect()
 		
+		
+		
+### question
+
+main.c / hostapd_cli.c main() 流程。
+package/kernel/mac80211/files/lib/netifd/wireless/mac80211.sh	754	
+
 
