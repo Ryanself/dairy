@@ -11,7 +11,7 @@ struct device
 
 
 	
-wdev_set_config_state(wdev, IFC_RELOAD);
+	wdev_set_config_state(wdev, IFC_RELOAD);
 
 (> 463 static void
    464 wdev_set_config_state(struct wireless_device *wdev, enum interface_config_state s)
@@ -41,3 +41,40 @@ wdev_set_config_state(wdev, IFC_RELOAD);
    272 ¦       ¦       config = blobmsg_format_json(b.head, true);
    273 ¦       }
    274 
+   
+   
+	netifd中，对wdev_update和vif_update的处理都调用了wdev_set_config_state(wdev, IFC_RELOAD)，
+	这导致了只要wireless/network有任何改变，所有ap都会重启。考虑在vif_update中增加一个方法来进行vif
+	的config update操作。
+-----------------------------
+
+
+	static void
+	__wireless_device_set_down(struct wireless_device *wdev)
+	{
+		if (wdev->state == IFS_TEARDOWN || wdev->state == IFS_DOWN)
+			return;
+	
+		if (wdev->script_task.uloop.pending) {
+			wireless_device_setup_cancel(wdev);
+			return;
+		}
+	
+		wdev->state = IFS_TEARDOWN;
+		wireless_device_run_handler(wdev, false);
+	}
+	
+---------------------------
+	static void
+	wdev_set_config_state(struct wireless_device *wdev, enum interface_config_state s)
+	{
+		if (wdev->config_state != IFC_NORMAL)
+			return;
+	
+		wdev->config_state = s;
+		if (wdev->state == IFS_DOWN)
+			wdev_handle_config_change(wdev);
+		else
+			__wireless_device_set_down(wdev);
+	}
+----------------------------------------
