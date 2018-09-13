@@ -8,20 +8,17 @@ hostapd的功能是作为AP的认证服务器，负责控制管理STA的接入�
 由于hostapd提供的max_num_sta接口仅对单个iface/bss有效，因而我们需要对源码略作修改来增加全部ap的sta连接数量限制。
 
 hostapd比较重要的结构体
+	
+	struct hapd_interfaces; // 定义了很多方法
+	struct hostapd_iface ; // iface data
+	struct hostapd_config; // iface config
+	struct hostapd_bss_config; // bss config
 
-	struct hostapd_data{
-	...
-	struct hostapd_iface *iface;
 	
-	int num_sta;
-	...
-	}
+	以及
+	struct hostapd_data; // bss data
 	
-以及
-	
-	struct hostapd_iface{
-	}
-对任一iface/bss，均有num_sta。
+对任一bss，均有num_sta。
 
 我们可以声明一个globe变量int all_sta_num
 或者在hostapd_iface中增加 int all_sta_num
