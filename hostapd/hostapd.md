@@ -1,4 +1,5 @@
-### hostapd source code
+## 在hostapd中增加params来限制ap下link的sta数量。
+#### source code
 
 hostapd的功能是作为AP的认证服务器，负责控制管理STA的接入和认证。
 
