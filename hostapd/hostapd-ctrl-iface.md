@@ -126,5 +126,6 @@ hostapd_global_ctrl_iface_init**
 	
 ------------------------------------------------
 
-
+	结局是在hostapd_cli中注册一个reload_bss来进行操作
+	代码编写及测试中
 	
