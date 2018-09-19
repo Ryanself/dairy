@@ -1,0 +1,14 @@
+hostapd中比较重要的结构体包括
+
+hapd_interfaces
+hostapd_iface
+hostapd_data
+hostapd_config
+hostapd_bss_config
+
+对任一interface，其被链接在hapd_interfaces, 且其有hostapd_config属性。
+
+hostapd_config 包含了所有bss共有的属性，且其中有hostapd_bss_config链表
+
+对任一bss，其指向对应hostapd_iface，并拥有自己的hostapd_data以及
+hostapd_bss_config。分别是自身当前属性，以及config属性。
