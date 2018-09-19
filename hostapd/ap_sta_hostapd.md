@@ -22,9 +22,8 @@ over.
 
 -----------------
 so sad, i'm back.
-原本以为不用再做些什么，但原生的hostapd对bss加载的机制有点问题，于是要重新修改。
+原本以为不用再做些什么，但原生的hostapd缺少对bss配置重载的实现，于是对照源码进行添加。
 --------------------------------------
-hostapd 在conf文件被改动后会重新
 
 先看main.c的main函数
 	
@@ -116,12 +115,8 @@ hostapd 经过一系列的初始化，
 			hostapd_reload_iface
 			hostapd_reload_bss
 			interfaces.reload_config = hostapd_reload_config;
-			
-			
 			handle_reload_iface()
 			return hostapd_reload_config(iface)
-			
-			
 			handle_reload()
 				hostapd_for_each_interface(interfaces, handle_reload_iface, NULL)
 			
@@ -188,18 +183,3 @@ hostapd 经过一系列的初始化，
 	* reload。
 	*/
 -----------------------------
-	path: hostapd/main.c
-	
-	eloop_register_signal(SIGHUP, handle_reload, interfaces);
-	
-		->static void handle_reload(int sig, void *signal_ctx)
-		
-			-> hostapd_for_each_interface(interfaces, handle_reload_iface, NULL);
-				
-				->hostapd_reload_config(iface)
-					->hostapd_reload_bss()
-	
-
-
-   	 
-   	 
