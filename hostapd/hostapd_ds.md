@@ -12,3 +12,6 @@ hostapd_config 包含了所有bss共有的属性，且其中有hostapd_bss_confi
 
 对任一bss，其指向对应hostapd_iface，并拥有自己的hostapd_data以及
 hostapd_bss_config。分别是自身当前属性，以及config属性。
+
+目前还可以做的改进：
+在reload的时进行增量更新，而不是重新载入所有config。
