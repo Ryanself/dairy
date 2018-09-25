@@ -7,7 +7,7 @@
 	->
 	init_wireless_driver "$@"
 	->
-	drv_mac80211_reload interface
+	drv_mac80211_reload $interface
 	
 	
 	
@@ -113,3 +113,68 @@ execvp，之后再详细写。
 	path: package/siflower/luci-siflower/modules/luci-mod-admin-full/luasrc/controller/admin/wirelessnew.lua
 	
 mac80211.sh 以及vif_update的netifd处理好烦zzzz
+
+
+
+vif_update 有3种处理，分别是add/remove/update(iface)
+最终调用的都是wdev_set_config_state(wdev, IFC_RELOAD);从而转到drv_mac80211_xx()
+由于此种方法会把hostapd进程teardown掉，造成一个bss更新config会影响到同一个phy下的其他bss。
+因此我们修改了其中update的调用。
+
+wdev_set_config_state最后调用到wireless_device_run_handler()
+在该handler中首先填充了一个字符数组argv[6]，然后fork了一个子进程，并将argv通过管道传入子进程。
+子进程中通过execvp来对argv进行解析并转入shell脚本进行执行。
+我们修改了argv在填充时action的值，同时在shell脚本中增加了对应的处理。
+由于execvp调用时argv最后一位必须为null，我们重新定义了新的argv[7],多出的一位用来存储bss的ifname。
+在shell脚本中通过ifname来调用hostapd_cli 进行reload 操作，这种情况下可以实现bss之间配置的独立。
+
+
+
+对netifd-wireless.sh的修改
+
+	init_wireless_driver() {
+	¦       name="$1"; shift
+	¦       cmd="$1"; shift
+	
+	¦       case "$cmd" in
+	¦       ¦       dump)
+	......
+	¦       ¦       ;;
+	¦       ¦       setup|teardown|reload)
+	¦       ¦       ¦       interface="$1"; shift
+	¦       ¦       ¦       data="$1"; shift
+	¦       ¦       ¦       [[ "$cmd" == "reload" ]] && wiface="$1"; shift
+	¦       ¦       ¦       export __netifd_device="$interface"
+
+	¦       ¦       ¦       add_driver() {
+	¦       ¦       ¦       ¦       [[ "$name" == "$1" ]] || return 0
+	¦       ¦       ¦       ¦       _wdev_handler "$1" "$cmd"
+	¦       ¦       ¦       }
+	¦       ¦       ;;
+	¦       esac
+	}
+
+增加了reload，其中wiface赋值为iface->ifname
+_wdev_handler "$1" "cmd"会调用到drv_$1_cmd参数为$interface。因此我们需要在mac80211.sh中增加
+drv_mac80211_reload()来进行处理。drv_mac80211_reload()与drv_mac80211_setup()大体类似，最主
+要的改变是
+	
+	  732 ¦       [ -n "$hostapd_ctrl" ] && {
+	  733 ¦       ¦       /etc/hostapd_cli -i $wiface reload
+	  734 ¦       }
+我们又见到了熟悉的$wiface。之前我们已经修改了hostapd_cli中reload的具体实现，现在该命令调用
+hostapd_cli来进行reload操作，从而避免了hostapd进程的重启。
+
+目前主要问题：
+	netifd中同时涉及了iface和wireless_interface的处理，稍显复杂。在简单的实现功能后，使用logread
+	命令进行查看发现虽然可以正常上网但是一直报ioctrl错误
+	
+	 daemon.warn dnsmasq[3217]: ioctl error.
+	 daemon.warn dnsmasq[3217]: ioctl error.
+	 
+想来是在修改vif_update中的处理时出现了遗漏，目前正在定位修改中。
+
+
+	
+	
+	
