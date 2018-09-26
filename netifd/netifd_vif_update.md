@@ -28,76 +28,9 @@ execvp，之后再详细写。
 	->
 	sleep 1; env -i; 
 	ubus call network reload ;
-	wifi reload_legacy;
+	#wifi reload_legacy; //此句不需再调用
 	sleep 3; 
 	gwifi start
-
-	wifi_updown() {
-        cmd=down
-        [ enable = "$1" ] && {
-                _wifi_updown disable "$2"
-                ubus_wifi_cmd "$cmd" "$2"
-                scan_wifi
-                cmd=up
-        }
-        ubus_wifi_cmd "$cmd" "$2"
-        _wifi_updown "$@"
-	}
-
-
-	wifi_reload_legacy() {
-        _wifi_updown "disable" "$1"
-        scan_wifi
-        _wifi_updown "enable" "$1"
-	}
-
-
-
-
-	gwifi_start(){
-        local section=$1
-        local index=$2
-        local time=$(uci -q get wireless.@wifi-iface[$section].limittime)
-        local iface_dis=1
-
-        if [ "x$time" = "xtrue" ];then
-                local timetype=$(uci -q  get wireless.@wifi-iface[$section].limittimetype)
-                if [ "x$timetype" = "x1" ];then
-                        local time=$(uci -q get wireless.@wifi-iface[$section].periodicaltime)
-                        local now_week=$(date +%u)
-                        local now=$(date +%s)
-                        for ptime in $time
-                        do
-                                eval $(echo $ptime | awk -F ',' '{print "starttime=\"" $1 "\";stoptime=\"" $2 "\"" ";week=" $3}')
-                                echo "0 $starttime * * $week gwifi restart $index" >> $CRONFILE
-                                if [ "x$stoptime" = "x0" ];then
-                                        echo "59 23 * * $week gwifi stop $index" >> $CRONFILE
-                                else
-                                        echo "0 $stoptime * * $week gwifi stop $index" >> $CRONFILE
-                                fi
-
-                                if [ "x$now_week" = "x$week" ]; then
-                                        sec1=$(date -d $starttime:00:00 +%s)
-                                        if [ "x$stoptime" = "x0" ];then
-                                                sec2=$(date -d 23:59:59 +%s)
-                                        else
-                                                sec2=$(date -d $stoptime:00:00 +%s)
-                                        fi
-                                        if [ $now -ge $((sec1-$WTIME)) -a $now -lt $((sec2-$WTIME)) ];then
-                                                iface_dis=0
-                                        fi
-                                fi
-                        done
-                        uci set wireless.@wifi-iface[$section].disabled=$iface_dis
-                        uci commit
-                elif [ "x$timetype" = "x0" ];then
-                        local rtime=$(uci -q get wireless.@wifi-iface[$section].remainingtime)
-                        local sec=$(($(date +%s) + ${rtime}*60*60))
-                        local oncetime=$(date -d "@$sec" +"%M %H %d %m")
-                        echo "$oncetime * gwifi stop_once $index" >> $CRONFILE
-                fi
-        fi
-}
 
 
 通过加log得知
@@ -114,7 +47,19 @@ execvp，之后再详细写。
 	
 mac80211.sh 以及vif_update的netifd处理好烦zzzz
 
+**修改路线：**
 
+	path: wireless.c
+	vif_update()
+	->iface_set_config_state(vif_old, IFC_RELOAD);
+	->wireless_iface_run_handler(iface, true);
+	
+	path: script/netifd-wireless.sh
+	init_wireless_driver()
+	
+	path: package/kernel/mac80211/files/lib/netifd/wireless/mac80211.sh
+	drv_mac80211_reload()
+	
 
 vif_update 有3种处理，分别是add/remove/update(iface)
 最终调用的都是wdev_set_config_state(wdev, IFC_RELOAD);从而转到drv_mac80211_xx()
@@ -124,6 +69,7 @@ vif_update 有3种处理，分别是add/remove/update(iface)
 wdev_set_config_state最后调用到wireless_device_run_handler()
 在该handler中首先填充了一个字符数组argv[6]，然后fork了一个子进程，并将argv通过管道传入子进程。
 子进程中通过execvp来对argv进行解析并转入shell脚本进行执行。
+
 我们修改了argv在填充时action的值，同时在shell脚本中增加了对应的处理。
 由于execvp调用时argv最后一位必须为null，我们重新定义了新的argv[7],多出的一位用来存储bss的ifname。
 在shell脚本中通过ifname来调用hostapd_cli 进行reload 操作，这种情况下可以实现bss之间配置的独立。
@@ -165,16 +111,45 @@ drv_mac80211_reload()来进行处理。drv_mac80211_reload()与drv_mac80211_setu
 我们又见到了熟悉的$wiface。之前我们已经修改了hostapd_cli中reload的具体实现，现在该命令调用
 hostapd_cli来进行reload操作，从而避免了hostapd进程的重启。
 
-目前主要问题：
-	netifd中同时涉及了iface和wireless_interface的处理，稍显复杂。在简单的实现功能后，使用logread
-	命令进行查看发现虽然可以正常上网但是一直报ioctrl错误
+## 目前主要问题：
+	1. netifd中同时涉及了iface和wireless_interface的处理，稍显复杂。在简单的实现功能后，发现
 	
-	 daemon.warn dnsmasq[3217]: ioctl error.
-	 daemon.warn dnsmasq[3217]: ioctl error.
-	 
-想来是在修改vif_update中的处理时出现了遗漏，目前正在定位修改中。
-
-
+	在信道设置为静态时，测试成功
+	在信道设置为auto时，测试成功
+	在信道设置为静态时切换到auto，测试失败
 	
+由于仅测试了一次目前还不具可信度。后续继续测试修改中。
+
+-------------------------------
+	2. 在2.4g 和5g下单独测试修改ssid均成功。
+	当guest 2.4g开启而5g关闭时，打开5g，此时测试失败。./sbin/wifi 后测试成功。
+	
+综上，当进行network级别的操作而不进行重置时会造成失败。查看log并未触发vif_update函数。
+
+------------------------------------
+	3. 测试只能设置一次，第二次设置无法触发vif_update。
+原因应该与问题1相同。
+
+推测为某状态未传递、同步。
+wdev->state
+wdev->config_state 
+wdev->autostart
+
+## QUESTION
+
+目前主要问题在vif_update最开始的处理
+
+	1. 设置开启或禁用5g时，仅对phy1做了重置，应该有某参数状态未及时传递，造成测试无法成功。
+2. 设置信道时，未调用任何update，仅做了apply update处理。
+
+        --nixio.syslog("crit", myprint(ifaces))
+        local changes = network:changes()
+        if((changes ~= nil) and (type(changes) == "table") and (next(changes) ~= nil)) then
+                nixio.syslog("crit","apply changes")
+                network:save("wireless")
+                network:commit("wireless")
+                sysutil.fork_exec("sleep 1; env -i; ubus call network reload ; wifi reload_legacy")
+        end
+
 	
 	
