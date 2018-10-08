@@ -135,21 +135,21 @@ wdev->state
 wdev->config_state 
 wdev->autostart
 
+ 只能设置一次是因为wdev->config_state在reload结束没有设置为IFC_NORMAL，所以默认仍旧在设置中，下次设置会直接return。
+（1）reload结束设置为IFC_NORMAL
+
+
 ## QUESTION
 
 目前主要问题在vif_update最开始的处理
 
-	1. 设置开启或禁用5g时，仅对phy1做了重置，应该有某参数状态未及时传递，造成测试无法成功。
+1. 设置开启或禁用5g时，仅对phy1做了重置，应该有某参数状态未及时传递，造成测试无法成功。
 2. 设置信道时，未调用任何update，仅做了apply update处理。
 
-        --nixio.syslog("crit", myprint(ifaces))
-        local changes = network:changes()
-        if((changes ~= nil) and (type(changes) == "table") and (next(changes) ~= nil)) then
-                nixio.syslog("crit","apply changes")
-                network:save("wireless")
-                network:commit("wireless")
-                sysutil.fork_exec("sleep 1; env -i; ubus call network reload ; wifi reload_legacy")
-        end
+---------------------
+## SOLUTION
 
-	
-	
+未能触发vif_update猜测为 wdev->state 不正确
+
+查看代码后发现在handle 完iface后应该将wdev->config_state 设置为IFC_NORMAL否则会影响之后的操作（在再次处理时会直接return），
+修改后测试正常。
