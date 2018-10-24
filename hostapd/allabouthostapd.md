@@ -9,8 +9,8 @@ bss_set_state
 ->set drv_priv
 ->1 /2 
 ->setup_iface /deinit_iface
---
-
+------------------------
+### 1.
 在学习`hostapd`与`netifd`机制时，我们通过web端的lua-uci传递参数到`netifd/wireless.c`中的iface中，然后
 通过传递`argv`到`mac80211.sh`来调用`hostapd_cli`。
 在向`mac80211.sh`传递时，大体操作只有3个
@@ -33,5 +33,17 @@ bss_set_state
 理。
 
 由于对`hostapd`的`setup_inteface`、`bss`中一些细节始终模糊，并未做太多其他实现。
+
+---------------------------
+### 2.
+hostapd调用了nl80211的接口，比如对ap的设置set_ap：
+
+在hostapd的hostapd_data结构体中，有driver属性。
+
+	hostapd_data->driver.set_ap = wpa_driver_nl80211_set_ap
+同上，hostapd的各种ops在
+	
+	path: src/drivers/driver_nl80211.c
+中获得填充。然后通过nla_put将对应的cmd-msg发送到nl80211对应方法的实现上，从而实现对ap的各种操作。
 
 **星期三, 17. 十月 2018 02:06下午 **
