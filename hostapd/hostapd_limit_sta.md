@@ -20,7 +20,7 @@ hostapd比较重要的结构体
 	
 对任一bss，均有num_sta。
 
-我们可以声明一个globe变量int all_sta_num
+我们可以声明一个global变量int all_sta_num
 或者在hostapd_iface中增加 int all_sta_num
 
 在beacon.c中 
@@ -71,7 +71,7 @@ hostapd比较重要的结构体
  	make package/network/services/hostapd/update
  	cd build_dir/target-mipsel_mips-interAptiv_uClibc-0.9.33.2/hostapd-mini/hostapd-2015-03-25
  	quilt series
- 	quilt new 731-support-device-max-num-sta.patch
+ 	quilt new support-device-max-num-sta.patch
  	quilt add ./src/ap/ap_config.c
  	quilt add ./src/ap/ap_config.h
  	quilt add ./src/ap/beacon.c
@@ -80,7 +80,7 @@ hostapd比较重要的结构体
  	quilt refresh
  	cd -
  	make package/network/services/hostapd/update
- 	//if success （package/network/services/hostapd/patches/731-support-device-max-num-sta.patch）is exists
+ 	//if success （package/network/services/hostapd/patches/support-device-max-num-sta.patch）can be seen.
  	make
  	
  	

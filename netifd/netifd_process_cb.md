@@ -35,7 +35,8 @@
 		netifd_start_process(argv, NULL, &wdev->script_task);
 		
 		if (fds[1] >= 0)
-			close(fds[1]);
+			close(fds[1]);//此处仅close了fds[1]，需要注意。我在实现其他功能时增加了close(fds[0])。
+			//否则netifd的句柄数量会不断增加，目前还在测试中，其他影响暂不清楚。
 		
 		free(config);
 	}
