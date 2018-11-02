@@ -1,14 +1,15 @@
-src/ap/hsotapd.c
-src/ap/ap_config.h
-ipkg-mips_siflower/hostapd-common/lib/netifd/hostapd.sh
-hostapd/config_file.c
-1. enable_iface
-2. disable_iface
-state_change->
-bss_set_state
-->set drv_priv
-->1 /2 
-->setup_iface /deinit_iface
+	src/ap/hsotapd.c
+	src/ap/ap_config.h
+
+	hostapd-common/lib/netifd/hostapd.sh
+	hostapd/config_file.c
+	1. enable_iface
+	2. disable_iface
+	state_change->
+	bss_set_state
+	->set drv_priv
+	->1 /2 
+	->setup_iface /deinit_iface
 ------------------------
 ### 1.
 在学习`hostapd`与`netifd`机制时，我们通过web端的lua-uci传递参数到`netifd/wireless.c`中的iface中，然后
